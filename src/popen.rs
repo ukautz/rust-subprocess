@@ -837,9 +837,38 @@ mod os {
         }
 
         let (stdin, stdout, stderr) = child_ends;
+        /*
+        // This was the old code, that dropped the file descriptors implicitly:
+
+         if let Some(stdin) = stdin
+            && stdin.as_raw_fd() != 0
+        {
+            posix::dup2(stdin.as_raw_fd(), 0)?;
+        }
+        if let Some(stdout) = stdout
+            && stdout.as_raw_fd() != 1
+        {
+            posix::dup2(stdout.as_raw_fd(), 1)?;
+        }
+        if let Some(stderr) = stderr
+            && stderr.as_raw_fd() != 2
+        {
+            posix::dup2(stderr.as_raw_fd(), 2)?;
+        } */
+
+        
         dup2_if_needed(&stdin, 0)?;
         dup2_if_needed(&stdout, 1)?;
         dup2_if_needed(&stderr, 2)?;
+        
+        /*
+        // Explicitly dropping the descriptors here (or passing them owned) gives
+        // the old behavior:
+
+        drop(stdin);
+        drop(stdout);
+        drop(stderr); */
+        
         posix::reset_sigpipe()?;
 
         // setgid must come before setuid: once we drop privileges with setuid, we may
